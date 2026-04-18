@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Note de Frais — Minari</title>
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/dm-sans@5.0.14/index.css" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
+  .app { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #d6d4cc; }
+  .header h1 { font-size: 2rem; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; color: #1a1a18; }
+  .header p { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: #aaa; margin-top: 0.4rem; }
+
+  .card { background: #fff; border: 1px solid #e0ded8; border-radius: 4px; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .card-title { font-size: 0.65rem; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; color: #aaa; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f0ede8; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  label { display: block; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 0.4rem; }
+  input, select, textarea { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #dddbd5; border-radius: 2px; font-size: 0.9rem; font-family: inherit; background: #fafaf8; color: #1a1a18; outline: none; transition: border-color 0.15s; }
+  input:focus, select:focus, textarea:focus { border-color: #888; background: #fff; }
+  textarea { resize: vertical; min-height: 56px; }
+  .field { margin-bottom: 1rem; }
+  .field:last-child { margin-bottom: 0; }
+
+  .lines-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .lines-table th { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; font-weight: 400; text-align: left; padding: 0 0.5rem 0.6rem; border-bottom: 1px solid #ece9e3; }
+  .lines-table td { padding: 0.35rem 0.5rem; vertical-align: middle; }
+  .lines-table td input, .lines-table td select { padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+  .lines-table tbody tr { border-bottom: 1px solid #f5f4f0; }
+  .col-date { width: 112px; }
+  .col-cat { width: 128px; }
+  .col-ht { width: 88px; }
+  .col-tva { width: 68px; }
+  .col-ttc { width: 92px; }
+  .col-file { width: 28px; }
+  .col-del { width: 32px; }
+  .ttc-display { font-size: 0.85rem; color: #555; padding: 0.4rem 0.5rem; display: block; }
+
+  .btn-add { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; background: none; border: 1px solid #ccc; border-radius: 2px; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: #666; cursor: pointer; font-family: inherit; transition: all 0.15s; margin-top: 1rem; }
+  .btn-add:hover { border-color: #888; color: #1a1a18; background: #fafaf8; }
+  .btn-del { background: none; border: none; cursor: pointer; color: #ddd; font-size: 1.1rem; line-height: 1; padding: 0.1rem 0.3rem; transition: color 0.15s; }
+  .btn-del:hover { color: #c0392b; }
+
+  .file-badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 2px; font-size: 0.75rem; }
+
+  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #e0ded8; border-top-color: #888; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 4px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .totals { display: flex; justify-content: flex-end; margin-top: 1rem; }
+  .totals-box { background: #fafaf8; border: 1px solid #e8e6e0; border-radius: 2px; padding: 1rem 1.25rem; min-width: 260px; }
+  .total-row { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; font-size: 0.875rem; color: #666; }
+  .total-row.main { padding-top: 0.6rem; margin-top: 0.3rem; border-top: 1px solid #e0ded8; color: #1a1a18; }
+  .total-label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .upload-zone { border: 1.5px dashed #ccc; border-radius: 4px; padding: 1.75rem; text-align: center; cursor: pointer; transition: all 0.15s; background: #fafaf8; }
+  .upload-zone:hover, .upload-zone.dragging { border-color: #888; background: #f5f2ec; }
+  .upload-text { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: #aaa; }
+  .upload-sub { font-size: 0.68rem; color: #bbb; margin-top: 0.3rem; }
+  #fileInput { display: none; }
+
+  .file-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .file-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: #fafaf8; border: 1px solid #e8e6e0; border-radius: 2px; font-size: 0.82rem; }
+  .file-item-name { flex: 1; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-item-status { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .file-item-status.analyzing { color: #999; }
+  .file-item-status.done { color: #3a6a3a; }
+  .file-item-status.error { color: #c0392b; }
+  .file-item-remove { background: none; border: none; cursor: pointer; color: #ccc; font-size: 1rem; transition: color 0.15s; padding: 0 0.2rem; }
+  .file-item-remove:hover { color: #c0392b; }
+
+  .btn-generate { width: 100%; padding: 1rem; background: #1a1a18; color: #f5f4f0; border: none; border-radius: 2px; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .btn-generate:hover { background: #333; }
+  .btn-generate:disabled { background: #bbb; cursor: not-allowed; }
+  .status { text-align: center; font-size: 0.75rem; letter-spacing: 0.06em; color: #888; margin-top: 0.75rem; min-height: 1.2em; }
+  .status.success { color: #3a6a3a; }
+  .status.error { color: #c0392b; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Note de frais</h1>
+    <p>Minari — Analyse automatique des justificatifs</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Informations générales</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Société</label>
+        <input type="text" id="societe" value="Minari" readonly style="background:#f0ede8;color:#aaa;cursor:default;" />
+      </div>
+      <div class="field">
+        <label>Demandeur</label>
+        <select id="employe">
+          <option value="Julien Schmitt|Président">Julien Schmitt — Président</option>
+          <option value="Clément Bataille|Directeur Général">Clément Bataille — Directeur Général</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:1rem;">
+      <div class="field">
+        <label>Date de dépôt</label>
+        <input type="date" id="dateDepot" />
+      </div>
+      <div class="field">
+        <label>Devise</label>
+        <select id="devise">
+          <option value="EUR">EUR — €</option>
+          <option value="USD">USD — $</option>
+          <option value="GBP">GBP — £</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Justificatifs — les lignes sont remplies automatiquement</div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-text">Déposez vos factures ici ou cliquez pour sélectionner</div>
+      <div class="upload-sub">PDF, JPG, PNG — plusieurs fichiers acceptés</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFiles(this.files)" />
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Lignes de dépenses</div>
+    <div style="overflow-x:auto;">
+      <table class="lines-table">
+        <thead>
+          <tr>
+            <th class="col-date">Date</th>
+            <th class="col-cat">Catégorie</th>
+            <th>Description</th>
+            <th class="col-ht">Montant HT</th>
+            <th class="col-tva">TVA %</th>
+            <th class="col-ttc">Total TTC</th>
+            <th class="col-file"></th>
+            <th class="col-del"></th>
+          </tr>
+        </thead>
+        <tbody id="linesBody"></tbody>
+      </table>
+    </div>
+    <button class="btn-add" onclick="addLine()">+ Ajouter une ligne manuellement</button>
+    <div class="totals">
+      <div class="totals-box">
+        <div class="total-row"><span class="total-label">Total HT</span><span id="totalHT">0,00 €</span></div>
+        <div class="total-row"><span class="total-label">Total TVA</span><span id="totalTVA">0,00 €</span></div>
+        <div class="total-row main"><span class="total-label">Total TTC</span><span id="totalTTC" style="font-size:1.05rem;">0,00 €</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="display:flex;gap:0.75rem;align-items:center;">
+    <button class="btn-generate" id="btnGenerate" onclick="generatePDF()" style="flex:1;">Générer le PDF</button>
+    <button class="btn-generate" onclick="resetAll()" style="flex:0 0 auto;width:auto;padding:1rem 1.5rem;background:#e8e6e0;color:#555;">Tout effacer</button>
+    <div class="status" id="statusMsg"></div>
+  </div>
+
+  <div class="card" id="historyCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid #f0ede8;">
+      <span style="font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:#aaa;">Historique des notes générées</span>
+      <button onclick="clearHistory()" style="background:none;border:none;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:#ccc;cursor:pointer;font-family:inherit;">Tout effacer</button>
+    </div>
+    <div id="historyList">
+      <div style="font-size:0.82rem;color:#ccc;text-align:center;padding:1rem 0;">Aucune note générée pour l'instant</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = ['Repas','Transport','Hébergement','Matériel','Software','Télécom','Formation','Autre'];
+const TVA_RATES = [0, 5.5, 10, 20];
+let lineCount = 0;
+let attachedFiles = [];
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragging'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
+
+async function handleFiles(files) {
+  for (const file of files) {
+    const fileId = 'f' + Date.now() + Math.random().toString(36).slice(2, 7);
+    attachedFiles.push({ file, type: file.type, fileId });
+    addFileItem(fileId, file.name);
+    await analyzeFile(file, fileId);
+  }
+  document.getElementById('fileInput').value = '';
+}
+
+function addFileItem(fileId, name) {
+  const list = document.getElementById('fileList');
+  const div = document.createElement('div');
+  div.className = 'file-item';
+  div.id = 'fitem-' + fileId;
+  div.innerHTML = `
+    <span style="font-size:1rem;">📄</span>
+    <span class="file-item-name" title="${name}">${name}</span>
+    <span class="file-item-status analyzing" id="fstatus-${fileId}"><span class="spinner"></span>Analyse en cours…</span>
+    <button class="file-item-remove" onclick="removeFile('${fileId}')" title="Supprimer">×</button>
+  `;
+  list.appendChild(div);
+}
+
+function setFileStatus(fileId, html, cls) {
+  const el = document.getElementById('fstatus-' + fileId);
+  if (el) { el.innerHTML = html; el.className = 'file-item-status ' + cls; }
+}
+
+function removeFile(fileId) {
+  attachedFiles = attachedFiles.filter(f => f.fileId !== fileId);
+  document.getElementById('fitem-' + fileId)?.remove();
+  document.querySelector(`[data-fileid="${fileId}"]`)?.closest('tr')?.remove();
+  recalc();
+}
+
+async function analyzeFile(file, fileId) {
+  try {
+    const base64 = await toBase64(file);
+    const isPDF = file.type === 'application/pdf';
+    const contentBlock = isPDF
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+      : { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } };
+
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        system: `Tu es un assistant comptable expert. Analyse la facture et extrais les données.
+Réponds UNIQUEMENT en JSON valide, sans markdown, avec exactement cette structure :
+{"date":"YYYY-MM-DD ou null","categorie":"Repas|Transport|Hébergement|Matériel|Software|Télécom|Formation|Autre","description":"description courte","montant_ht":nombre ou null,"taux_tva":0 ou 5.5 ou 10 ou 20,"montant_ttc":nombre ou null}
+
+RÈGLES IMPORTANTES :
+- montant_ht = montant HORS TAXES (avant TVA)
+- montant_ttc = montant TOUTES TAXES COMPRISES (après TVA)
+- Si la facture n'indique que le TTC : mets montant_ht à null et montant_ttc au montant indiqué
+- Si la facture n'indique que le HT : mets montant_ttc à null et montant_ht au montant indiqué
+- Ne jamais mettre le TTC dans montant_ht`,
+        messages: [{ role: 'user', content: [contentBlock, { type: 'text', text: 'Extrais les données de cette facture.' }] }]
+      })
+    });
+
+    const data = await resp.json();
+    const raw = data.content?.find(b => b.type === 'text')?.text || '';
+    const extracted = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const tva = extracted.taux_tva ?? 20;
+    let ht = extracted.montant_ht;
+    if (ht === null && extracted.montant_ttc) ht = parseFloat((extracted.montant_ttc / (1 + tva / 100)).toFixed(2));
+
+    addLine(extracted.date || '', extracted.categorie || 'Autre', extracted.description || file.name, ht ?? '', tva, fileId);
+    setFileStatus(fileId, '✓ Ligne ajoutée', 'done');
+  } catch (err) {
+    console.error(err);
+    addLine('', 'Autre', file.name, '', 20, fileId);
+    setFileStatus(fileId, '⚠ Non reconnu — vérifiez la ligne', 'error');
+  }
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function addLine(date = '', cat = 'Repas', desc = '', ht = '', tva = 20, fileId = null) {
+  lineCount++;
+  const id = lineCount;
+  const isImg = fileId && attachedFiles.find(f => f.fileId === fileId)?.type?.startsWith('image');
+  const badge = fileId
+    ? `<span class="file-badge" data-fileid="${fileId}" title="Justificatif joint" style="font-size:0.85rem;">${isImg ? '🖼' : '📄'}</span>`
+    : '';
+  const ttcVal = ht !== '' ? parseFloat(ht) * (1 + tva / 100) : null;
+
+  const tr = document.createElement('tr');
+  tr.id = `line-${id}`;
+  tr.innerHTML = `
+    <td class="col-date"><input type="date" id="date-${id}" value="${date}" oninput="recalc()" /></td>
+    <td class="col-cat"><select id="cat-${id}">${CATEGORIES.map(c => `<option value="${c}" ${c===cat?'selected':''}>${c}</option>`).join('')}</select></td>
+    <td><input type="text" id="desc-${id}" value="${desc}" placeholder="Description…" /></td>
+    <td class="col-ht"><input type="number" id="ht-${id}" value="${ht}" placeholder="0.00" step="0.01" min="0" oninput="recalcLine(${id})" /></td>
+    <td class="col-tva"><select id="tva-${id}" onchange="recalcLine(${id})">${TVA_RATES.map(r=>`<option value="${r}" ${r===tva?'selected':''}>${r}%</option>`).join('')}</select></td>
+    <td class="col-ttc"><span class="ttc-display" id="ttc-${id}">${ttcVal !== null ? fmtNum(ttcVal) : '—'}</span></td>
+    <td class="col-file">${badge}</td>
+    <td class="col-del"><button class="btn-del" onclick="removeLine(${id})">×</button></td>
+  `;
+  document.getElementById('linesBody').appendChild(tr);
+  recalc();
+}
+
+function removeLine(id) {
+  document.getElementById(`line-${id}`)?.remove();
+  recalc();
+}
+
+function recalcLine(id) {
+  const ht = parseFloat(document.getElementById(`ht-${id}`)?.value) || 0;
+  const tva = parseFloat(document.getElementById(`tva-${id}`)?.value) || 0;
+  const el = document.getElementById(`ttc-${id}`);
+  if (el) el.textContent = fmtNum(ht * (1 + tva / 100));
+  recalc();
+}
+
+function getSymbol() {
+  const d = document.getElementById('devise')?.value || 'EUR';
+  return d === 'EUR' ? '€' : d === 'USD' ? '$' : '£';
+}
+
+function fmtNum(n) { return n.toFixed(2).replace('.', ',') + ' ' + getSymbol(); }
+
+function recalc() {
+  let totalHT = 0, totalTVA = 0;
+  document.querySelectorAll('[id^="ht-"]').forEach(el => {
+    const id = el.id.replace('ht-', '');
+    const ht = parseFloat(el.value) || 0;
+    const tva = parseFloat(document.getElementById(`tva-${id}`)?.value) || 0;
+    totalHT += ht; totalTVA += ht * tva / 100;
+    const ttcEl = document.getElementById(`ttc-${id}`);
+    if (ttcEl) ttcEl.textContent = fmtNum(ht * (1 + tva / 100));
+  });
+  document.getElementById('totalHT').textContent = fmtNum(totalHT);
+  document.getElementById('totalTVA').textContent = fmtNum(totalTVA);
+  document.getElementById('totalTTC').textContent = fmtNum(totalHT + totalTVA);
+}
+
+document.getElementById('devise').addEventListener('change', recalc);
+
+function setStatus(msg, cls = '') {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg; el.className = 'status ' + cls;
+}
+
+function getLines() {
+  return [...document.querySelectorAll('[id^="ht-"]')].map(el => {
+    const id = el.id.replace('ht-', '');
+    const ht = parseFloat(el.value) || 0;
+    const tva = parseFloat(document.getElementById(`tva-${id}`)?.value) || 0;
+    return { date: document.getElementById(`date-${id}`)?.value || '', cat: document.getElementById(`cat-${id}`)?.value || '', desc: document.getElementById(`desc-${id}`)?.value || '', ht, tva, ttc: ht * (1 + tva / 100) };
+  });
+}
+
+async function generatePDF() {
+  const btn = document.getElementById('btnGenerate');
+  btn.disabled = true; setStatus('Génération en cours…');
+  try {
+    const employeRaw = document.getElementById('employe').value || '';
+    const [employe, titre] = employeRaw.split('|');
+    const dateDepot = document.getElementById('dateDepot').value || '';
+    const devise = document.getElementById('devise').value;
+    const sym = getSymbol();
+    const lines = getLines();
+    if (!lines.length) { setStatus('Ajoutez au moins une ligne.', 'error'); btn.disabled = false; return; }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const font = 'helvetica';
+    const margin = 18, contentW = 210 - margin * 2;
+    let y = margin;
+
+    doc.setTextColor(26, 26, 24); doc.setFontSize(20); doc.setFont(font, 'normal');
+    doc.text('Note de frais', margin, y);
+    doc.setFontSize(10); doc.setTextColor(180, 178, 168);
+    doc.text('Minari', 210 - margin, y, { align: 'right' });
+    y += 8;
+
+    const metaItems = [];
+    if (employe) metaItems.push(['Demandeur', employe + (titre ? ' · ' + titre : '')]);
+    if (dateDepot) metaItems.push(['Date de dépôt', new Date(dateDepot).toLocaleDateString('fr-FR')]);
+    metaItems.push(['Devise', devise]);
+    if (attachedFiles.length) metaItems.push(['Justificatifs', attachedFiles.length + ' fichier(s) joint(s)']);
+
+    const metaColW = contentW / Math.max(metaItems.length, 2);
+    metaItems.forEach((item, i) => {
+      const x = margin + i * metaColW;
+      doc.setTextColor(160, 158, 148); doc.setFontSize(7); doc.setFont(font, 'normal');
+      doc.text(item[0].toUpperCase(), x, y + 5);
+      doc.setTextColor(26, 26, 24); doc.setFontSize(9);
+      doc.text(item[1], x, y + 11);
+    });
+    y += 22;
+
+    doc.setDrawColor(220, 218, 210); doc.setLineWidth(0.3); doc.line(margin, y, 210 - margin, y); y += 6;
+
+    let totalHT = 0, totalTVA = 0;
+    doc.autoTable({
+      startY: y, margin: { left: margin, right: margin },
+      head: [['#', 'Date', 'Catégorie', 'Description', 'HT', 'TVA', 'TTC']],
+      body: lines.map((l, i) => {
+        totalHT += l.ht; totalTVA += l.ht * l.tva / 100;
+        return [i + 1, l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—', l.cat, l.desc || '—', l.ht.toFixed(2) + ' ' + sym, l.tva + '%', l.ttc.toFixed(2) + ' ' + sym];
+      }),
+      styles: { font: font, fontSize: 8.5, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, textColor: [40, 40, 38], lineColor: [230, 228, 220], lineWidth: 0.2 },
+      headStyles: { font: font, fillColor: [245, 244, 240], textColor: [130, 128, 118], fontStyle: 'normal', fontSize: 7, halign: 'left' },
+      alternateRowStyles: { fillColor: [250, 250, 248] },
+      columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 22 }, 2: { cellWidth: 26 }, 3: { cellWidth: 'auto' }, 4: { halign: 'right', cellWidth: 24 }, 5: { halign: 'center', cellWidth: 14 }, 6: { halign: 'right', cellWidth: 28 } }
+    });
+
+    y = doc.lastAutoTable.finalY + 8;
+    const totalTTC = totalHT + totalTVA;
+    const boxX = 210 - margin - 72;
+    doc.setFillColor(250, 250, 248); doc.setDrawColor(220, 218, 210); doc.setLineWidth(0.3);
+    doc.roundedRect(boxX, y, 72, 34, 1, 1, 'FD');
+    doc.setFontSize(7.5);
+    doc.setTextColor(150, 148, 138); doc.text('TOTAL HT', boxX + 6, y + 8);
+    doc.setTextColor(40, 40, 38); doc.text(totalHT.toFixed(2) + ' ' + sym, boxX + 66, y + 8, { align: 'right' });
+    doc.setTextColor(150, 148, 138); doc.text('TOTAL TVA', boxX + 6, y + 16);
+    doc.setTextColor(40, 40, 38); doc.text(totalTVA.toFixed(2) + ' ' + sym, boxX + 66, y + 16, { align: 'right' });
+    doc.setDrawColor(200, 198, 190); doc.line(boxX + 6, y + 20, boxX + 66, y + 20);
+    doc.setFontSize(9); doc.setFont(font, 'bold'); doc.setTextColor(26, 26, 24);
+    doc.text('TOTAL TTC', boxX + 6, y + 29);
+    doc.text(totalTTC.toFixed(2) + ' ' + sym, boxX + 66, y + 29, { align: 'right' });
+    doc.setFont(font, 'normal');
+
+    y += 42;
+    doc.setFontSize(6.5); doc.setTextColor(190, 188, 178);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} — Minari`, margin, y + 8);
+
+    let finalBytes;
+
+    if (!attachedFiles.length) {
+      finalBytes = doc.output('arraybuffer');
+    } else {
+      setStatus('Assemblage des justificatifs…');
+      const { PDFDocument } = PDFLib;
+      const finalDoc = await PDFDocument.load(doc.output('arraybuffer'));
+      for (const { file, type } of attachedFiles) {
+        const bytes = await file.arrayBuffer();
+        if (type === 'application/pdf') {
+          try {
+            const inv = await PDFDocument.load(bytes);
+            const pages = await finalDoc.copyPages(inv, inv.getPageIndices());
+            pages.forEach(p => finalDoc.addPage(p));
+          } catch(e) { console.warn('PDF merge error', e); }
+        } else {
+          try {
+            const page = finalDoc.addPage([595, 842]);
+            const img = type === 'image/png' ? await finalDoc.embedPng(bytes) : await finalDoc.embedJpg(bytes);
+            const { width, height } = img.scale(1);
+            const ratio = Math.min(520 / width, 760 / height, 1);
+            page.drawImage(img, { x: (595 - width * ratio) / 2, y: (842 - height * ratio) / 2, width: width * ratio, height: height * ratio });
+          } catch(e) { console.warn('Image embed error', e); }
+        }
+      }
+      finalBytes = await finalDoc.save();
+    }
+
+    openPDF(finalBytes, `note_frais_${dateDepot || 'minari'}.pdf`);
+    saveToHistory(employe, titre, '', totalHT + totalTVA, sym, attachedFiles.length, lines, dateDepot, devise);
+    setStatus(attachedFiles.length ? `PDF généré — ${attachedFiles.length} justificatif(s) joint(s).` : 'PDF généré.', 'success');
+  } catch(err) {
+    console.error(err); setStatus('Erreur : ' + err.message, 'error');
+  }
+  btn.disabled = false;
+}
+
+function openPDF(bytes, filename) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  // Essaie le téléchargement direct, sinon ouvre dans un nouvel onglet
+  try {
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  } catch(e) {
+    window.open(url, '_blank');
+  }
+}
+
+function resetAll() {
+  attachedFiles = [];
+  document.getElementById('linesBody').innerHTML = '';
+  document.getElementById('fileList').innerHTML = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('dateDepot').value = new Date().toISOString().split('T')[0];
+  recalc();
+  setStatus('');
+}
+
+// ── Historique ────────────────────────────────────────────
+function saveToHistory(employe, titre, objet, totalTTC, sym, nbFichiers, lines, dateDepot, devise) {
+  const history = getHistory();
+  history.unshift({ id: Date.now(), date: new Date().toISOString(), employe, titre, objet, totalTTC, sym, nbFichiers, lines, dateDepot, devise });
+  try { localStorage.setItem('minari_ndf_history', JSON.stringify(history.slice(0, 50))); } catch(e) {}
+  renderHistory();
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('minari_ndf_history') || '[]'); } catch(e) { return []; }
+}
+
+function deleteHistoryItem(id) {
+  const history = getHistory().filter(h => h.id !== id);
+  try { localStorage.setItem('minari_ndf_history', JSON.stringify(history)); } catch(e) {}
+  renderHistory();
+}
+
+function clearHistory() {
+  if (!confirm('Effacer tout l\'historique ?')) return;
+  try { localStorage.removeItem('minari_ndf_history'); } catch(e) {}
+  renderHistory();
+}
+
+async function redownloadEntry(id) {
+  const entry = getHistory().find(h => h.id === id);
+  if (!entry) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const font = 'helvetica';
+  const margin = 18, contentW = 210 - margin * 2;
+  const sym = entry.sym;
+  let y = margin;
+
+  doc.setTextColor(26, 26, 24); doc.setFontSize(20); doc.setFont(font, 'normal');
+  doc.text('Note de frais', margin, y);
+  doc.setFontSize(10); doc.setTextColor(180, 178, 168);
+  doc.text('Minari', 210 - margin, y, { align: 'right' });
+  y += 8;
+
+  const metaItems = [['Demandeur', entry.employe + (entry.titre ? ' · ' + entry.titre : '')]];
+  if (entry.dateDepot) metaItems.push(['Date de dépôt', new Date(entry.dateDepot).toLocaleDateString('fr-FR')]);
+  metaItems.push(['Devise', entry.devise || 'EUR']);
+  const metaColW = contentW / Math.max(metaItems.length, 2);
+  metaItems.forEach((item, i) => {
+    const x = margin + i * metaColW;
+    doc.setTextColor(160, 158, 148); doc.setFontSize(7); doc.setFont(font, 'normal');
+    doc.text(item[0].toUpperCase(), x, y + 5);
+    doc.setTextColor(26, 26, 24); doc.setFontSize(9);
+    doc.text(item[1], x, y + 11);
+  });
+  y += 22;
+
+  if (entry.objet) {
+    doc.setFontSize(7.5); doc.setTextColor(140, 138, 128); doc.text('OBJET', margin, y); y += 4;
+    doc.setTextColor(26, 26, 24); doc.setFontSize(9);
+    const ol = doc.splitTextToSize(entry.objet, contentW); doc.text(ol, margin, y); y += ol.length * 5 + 4;
+  }
+
+  doc.setDrawColor(220, 218, 210); doc.setLineWidth(0.3); doc.line(margin, y, 210 - margin, y); y += 6;
+
+  let totalHT = 0, totalTVA = 0;
+  doc.autoTable({
+    startY: y, margin: { left: margin, right: margin },
+    head: [['#', 'Date', 'Catégorie', 'Description', 'HT', 'TVA', 'TTC']],
+    body: entry.lines.map((l, i) => {
+      totalHT += l.ht; totalTVA += l.ht * l.tva / 100;
+      return [i + 1, l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—', l.cat, l.desc || '—', l.ht.toFixed(2) + ' ' + sym, l.tva + '%', l.ttc.toFixed(2) + ' ' + sym];
+    }),
+    styles: { font, fontSize: 8.5, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, textColor: [40, 40, 38], lineColor: [230, 228, 220], lineWidth: 0.2 },
+    headStyles: { font, fillColor: [245, 244, 240], textColor: [130, 128, 118], fontStyle: 'normal', fontSize: 7, halign: 'left' },
+    alternateRowStyles: { fillColor: [250, 250, 248] },
+    columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 22 }, 2: { cellWidth: 26 }, 3: { cellWidth: 'auto' }, 4: { halign: 'right', cellWidth: 24 }, 5: { halign: 'center', cellWidth: 14 }, 6: { halign: 'right', cellWidth: 28 } }
+  });
+
+  y = doc.lastAutoTable.finalY + 8;
+  const ttc = totalHT + totalTVA;
+  const boxX = 210 - margin - 72;
+  doc.setFillColor(250, 250, 248); doc.setDrawColor(220, 218, 210); doc.setLineWidth(0.3);
+  doc.roundedRect(boxX, y, 72, 34, 1, 1, 'FD');
+  doc.setFontSize(7.5);
+  doc.setTextColor(150, 148, 138); doc.text('TOTAL HT', boxX + 6, y + 8);
+  doc.setTextColor(40, 40, 38); doc.text(totalHT.toFixed(2) + ' ' + sym, boxX + 66, y + 8, { align: 'right' });
+  doc.setTextColor(150, 148, 138); doc.text('TOTAL TVA', boxX + 6, y + 16);
+  doc.setTextColor(40, 40, 38); doc.text(totalTVA.toFixed(2) + ' ' + sym, boxX + 66, y + 16, { align: 'right' });
+  doc.setDrawColor(200, 198, 190); doc.line(boxX + 6, y + 20, boxX + 66, y + 20);
+  doc.setFontSize(9); doc.setFont(font, 'bold'); doc.setTextColor(26, 26, 24);
+  doc.text('TOTAL TTC', boxX + 6, y + 29);
+  doc.text(ttc.toFixed(2) + ' ' + sym, boxX + 66, y + 29, { align: 'right' });
+  y += 42;
+  doc.setFont(font, 'normal'); doc.setFontSize(6.5); doc.setTextColor(190, 188, 178);
+  doc.text(`Généré le ${new Date(entry.date).toLocaleDateString('fr-FR')} — Minari`, margin, y + 8);
+
+  openPDF(doc.output('arraybuffer'), `note_frais_${entry.dateDepot || entry.id}.pdf`);
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const history = getHistory();
+  if (!history.length) {
+    list.innerHTML = '<div style="font-size:0.82rem;color:#ccc;text-align:center;padding:1rem 0;">Aucune note générée pour l\'instant</div>';
+    return;
+  }
+  list.innerHTML = history.map(h => `
+    <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid #f5f4f0;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.88rem;color:#1a1a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${h.employe}${h.objet ? ' · <span style="color:#888;">' + h.objet + '</span>' : ''}
+        </div>
+        <div style="font-size:0.72rem;color:#aaa;margin-top:0.2rem;">
+          ${new Date(h.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+          ${h.nbFichiers ? '· ' + h.nbFichiers + ' justificatif(s)' : ''}
+        </div>
+      </div>
+      <div style="font-size:0.95rem;font-weight:500;color:#1a1a18;white-space:nowrap;margin-right:0.5rem;">${h.totalTTC.toFixed(2).replace('.',',')} ${h.sym}</div>
+      <button onclick="redownloadEntry(${h.id})" title="Télécharger" style="background:none;border:1px solid #e0ded8;border-radius:2px;padding:0.3rem 0.6rem;cursor:pointer;font-size:0.75rem;color:#555;font-family:inherit;white-space:nowrap;">↓ PDF</button>
+      <button onclick="deleteHistoryItem(${h.id})" title="Supprimer" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:1.1rem;padding:0 0.2rem;transition:color 0.15s;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#ccc'">×</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('dateDepot').value = new Date().toISOString().split('T')[0];
+renderHistory();
+</script>
+</body>
+</html>
