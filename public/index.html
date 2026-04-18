@@ -232,7 +232,7 @@ async function analyzeFile(file, fileId) {
       ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
       : { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } };
 
-    const resp = await fetch('/api/analyze', {
+    const resp = await fetch('/.netlify/functions/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
