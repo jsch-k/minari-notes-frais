@@ -236,7 +236,7 @@ async function analyzeFile(file, fileId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-5',
         max_tokens: 500,
         system: `Tu es un assistant comptable expert. Analyse la facture et extrais les données.
 Réponds UNIQUEMENT en JSON valide, sans markdown, avec exactement cette structure :
