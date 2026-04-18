@@ -398,15 +398,15 @@ async function generatePDF() {
     let totalHT = 0, totalTVA = 0;
     doc.autoTable({
       startY: y, margin: { left: margin, right: margin },
-      head: [['#', 'Date', 'Catégorie', 'Description', 'HT', 'TVA', 'TTC']],
+      head: [['Date', 'Catégorie', 'Description', 'HT', 'TVA', 'TTC']],
       body: lines.map((l, i) => {
         totalHT += l.ht; totalTVA += l.ht * l.tva / 100;
-        return [i + 1, l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—', l.cat, l.desc || '—', l.ht.toFixed(2) + ' ' + sym, l.tva + '%', l.ttc.toFixed(2) + ' ' + sym];
+        return [l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—', l.cat, l.desc || '—', l.ht.toFixed(2) + ' ' + sym, l.tva + '%', l.ttc.toFixed(2) + ' ' + sym];
       }),
       styles: { font: font, fontSize: 8.5, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, textColor: [40, 40, 38], lineColor: [230, 228, 220], lineWidth: 0.2 },
       headStyles: { font: font, fillColor: [245, 244, 240], textColor: [130, 128, 118], fontStyle: 'normal', fontSize: 7, halign: 'left' },
       alternateRowStyles: { fillColor: [250, 250, 248] },
-      columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 28 }, 2: { cellWidth: 24 }, 3: { cellWidth: 'auto' }, 4: { halign: 'right', cellWidth: 22 }, 5: { halign: 'center', cellWidth: 12 }, 6: { halign: 'right', cellWidth: 26 } }
+      columnStyles: { 0: { cellWidth: 26 }, 1: { cellWidth: 24 }, 2: { cellWidth: 'auto' }, 3: { halign: 'right', cellWidth: 22 }, 4: { halign: 'center', cellWidth: 14 }, 5: { halign: 'right', cellWidth: 26 } }
     });
 
     y = doc.lastAutoTable.finalY + 8;
@@ -555,15 +555,15 @@ async function redownloadEntry(id) {
   let totalHT = 0, totalTVA = 0;
   doc.autoTable({
     startY: y, margin: { left: margin, right: margin },
-    head: [['#', 'Date', 'Catégorie', 'Description', 'HT', 'TVA', 'TTC']],
+    head: [['Date', 'Catégorie', 'Description', 'HT', 'TVA', 'TTC']],
     body: entry.lines.map((l, i) => {
       totalHT += l.ht; totalTVA += l.ht * l.tva / 100;
-      return [i + 1, l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—', l.cat, l.desc || '—', l.ht.toFixed(2) + ' ' + sym, l.tva + '%', l.ttc.toFixed(2) + ' ' + sym];
+      return [l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '—', l.cat, l.desc || '—', l.ht.toFixed(2) + ' ' + sym, l.tva + '%', l.ttc.toFixed(2) + ' ' + sym];
     }),
     styles: { font, fontSize: 8.5, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, textColor: [40, 40, 38], lineColor: [230, 228, 220], lineWidth: 0.2 },
     headStyles: { font, fillColor: [245, 244, 240], textColor: [130, 128, 118], fontStyle: 'normal', fontSize: 7, halign: 'left' },
     alternateRowStyles: { fillColor: [250, 250, 248] },
-    columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 28 }, 2: { cellWidth: 24 }, 3: { cellWidth: 'auto' }, 4: { halign: 'right', cellWidth: 22 }, 5: { halign: 'center', cellWidth: 12 }, 6: { halign: 'right', cellWidth: 26 } }
+    columnStyles: { 0: { cellWidth: 26 }, 1: { cellWidth: 24 }, 2: { cellWidth: 'auto' }, 3: { halign: 'right', cellWidth: 22 }, 4: { halign: 'center', cellWidth: 14 }, 5: { halign: 'right', cellWidth: 26 } }
   });
 
   y = doc.lastAutoTable.finalY + 8;
