@@ -283,7 +283,7 @@ function addLine(date = '', cat = 'Repas', desc = '', ht = '', tva = 20, fileId 
   const isImg = fileId && attachedFiles.find(f => f.fileId === fileId)?.type?.startsWith('image');
   const badge = fileId
     ? `<span class="file-badge" data-fileid="${fileId}" title="Justificatif joint" style="font-size:0.85rem;">${isImg ? '🖼' : '📄'}</span>`
-    : '';
+    : `<button onclick="document.getElementById('linefile-${id}').click()" title="Joindre un justificatif" style="background:none;border:none;cursor:pointer;font-size:0.85rem;color:#ccc;padding:0;transition:color 0.15s;" onmouseover="this.style.color='#888'" onmouseout="this.style.color='#ccc'">📎</button><input type="file" id="linefile-${id}" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="attachLineFile(${id}, this)" />`;
   const ttcVal = ht !== '' ? parseFloat(ht) * (1 + tva / 100) : null;
 
   const tr = document.createElement('tr');
@@ -295,11 +295,21 @@ function addLine(date = '', cat = 'Repas', desc = '', ht = '', tva = 20, fileId 
     <td class="col-ht"><input type="number" id="ht-${id}" value="${ht}" placeholder="0.00" step="0.01" min="0" oninput="recalcLine(${id})" /></td>
     <td class="col-tva"><select id="tva-${id}" onchange="recalcLine(${id})">${TVA_RATES.map(r=>`<option value="${r}" ${r===tva?'selected':''}>${r}%</option>`).join('')}</select></td>
     <td class="col-ttc"><span class="ttc-display" id="ttc-${id}">${ttcVal !== null ? fmtNum(ttcVal) : '—'}</span></td>
-    <td class="col-file">${badge}</td>
+    <td class="col-file" id="filecell-${id}">${badge}</td>
     <td class="col-del"><button class="btn-del" onclick="removeLine(${id})">×</button></td>
   `;
   document.getElementById('linesBody').appendChild(tr);
   recalc();
+}
+
+function attachLineFile(lineId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fileId = 'f' + Date.now() + Math.random().toString(36).slice(2, 7);
+  attachedFiles.push({ file, type: file.type, fileId });
+  const isImg = file.type.startsWith('image');
+  const cell = document.getElementById(`filecell-${lineId}`);
+  if (cell) cell.innerHTML = `<span class="file-badge" data-fileid="${fileId}" title="${file.name}" style="font-size:0.85rem;">${isImg ? '🖼' : '📄'}</span>`;
 }
 
 function removeLine(id) {
